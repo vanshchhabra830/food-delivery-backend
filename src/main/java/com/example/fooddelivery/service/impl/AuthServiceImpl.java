@@ -4,19 +4,19 @@ import com.example.fooddelivery.dto.request.LoginRequest;
 import com.example.fooddelivery.dto.request.RegisterRequest;
 import com.example.fooddelivery.dto.response.AuthResponse;
 import com.example.fooddelivery.entity.User;
-import com.example.fooddelivery.enums.Role;
 import com.example.fooddelivery.exception.DuplicateResourceException;
 import com.example.fooddelivery.mapper.UserMapper;
 import com.example.fooddelivery.repository.UserRepository;
 import com.example.fooddelivery.security.JwtTokenProvider;
 import com.example.fooddelivery.service.AuthService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
 
@@ -38,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
+            log.warn("Registration failed - email already exists: {}", request.getEmail());
             throw new DuplicateResourceException("User already exists with email: " + request.getEmail());
         }
 
@@ -45,10 +46,11 @@ public class AuthServiceImpl implements AuthService {
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole() != null ? request.getRole() : Role.CUSTOMER)
+                .role(request.getRole())
                 .build();
 
         User savedUser = userRepository.save(user);
+        log.info("User registered successfully: {}", savedUser.getEmail());
 
         String token = jwtTokenProvider.generateToken(savedUser.getEmail(), savedUser.getRole().name());
 
@@ -60,12 +62,19 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (BadCredentialsException ex) {
+            log.warn("Login failed for email: {}", request.getEmail());
+            throw ex;
+        }
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+
+        log.info("User logged in successfully: {}", user.getEmail());
 
         String token = jwtTokenProvider.generateToken(user.getEmail(), user.getRole().name());
 

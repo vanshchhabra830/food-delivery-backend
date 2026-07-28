@@ -1,8 +1,10 @@
 package com.example.fooddelivery.dto.request;
 
 import com.example.fooddelivery.enums.Role;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,17 +17,23 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RegisterRequest {
 
+    @Schema(example = "John Doe")
     @NotBlank(message = "Name is required")
+    @Size(min = 3, max = 50, message = "Name must be between 3 and 50 characters")
     private String name;
 
+    @Schema(example = "john@example.com")
     @NotBlank(message = "Email is required")
     @Email(message = "Email must be valid")
     private String email;
 
+    @Schema(example = "password123")
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     private String password;
 
+    @Schema(example = "CUSTOMER")
+    @NotNull(message = "Role is required")
     private Role role;
 
 }
