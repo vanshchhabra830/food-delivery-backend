@@ -32,8 +32,7 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     public RestaurantResponse getRestaurantById(Long id) {
-        Restaurant restaurant = restaurantRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + id));
+        Restaurant restaurant = findActiveRestaurantById(id);
         return RestaurantMapper.toRestaurantResponse(restaurant);
     }
 
@@ -45,8 +44,7 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     public RestaurantResponse updateRestaurant(Long id, RestaurantRequest request) {
-        Restaurant restaurant = restaurantRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + id));
+        Restaurant restaurant = findActiveRestaurantById(id);
 
         restaurant.setName(request.getName());
         restaurant.setDescription(request.getDescription());
@@ -62,22 +60,28 @@ public class RestaurantServiceImpl implements RestaurantService {
 
     @Override
     public void deleteRestaurant(Long id) {
-        Restaurant restaurant = restaurantRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + id));
-        restaurantRepository.delete(restaurant);
-        log.info("Restaurant deleted successfully: {}", restaurant.getName());
+        Restaurant restaurant = findActiveRestaurantById(id);
+        restaurant.setActive(false);
+        restaurantRepository.save(restaurant);
+        log.info("Restaurant soft-deleted successfully: {}", restaurant.getName());
     }
 
     @Override
-    public Page<RestaurantResponse> searchRestaurantsByName(String name, Pageable pageable) {
-        return restaurantRepository.findByNameContainingIgnoreCase(name, pageable)
+    public Page<RestaurantResponse> searchRestaurantsByName(String keyword, Pageable pageable) {
+        log.info("Searching restaurants with keyword: {}", keyword);
+        return restaurantRepository.findByNameContainingIgnoreCaseAndActiveTrue(keyword, pageable)
                 .map(RestaurantMapper::toRestaurantResponse);
     }
 
     @Override
     public Page<RestaurantResponse> getRestaurantsByCuisine(String cuisine, Pageable pageable) {
-        return restaurantRepository.findByCuisineIgnoreCase(cuisine, pageable)
+        return restaurantRepository.findByCuisineIgnoreCaseAndActiveTrue(cuisine, pageable)
                 .map(RestaurantMapper::toRestaurantResponse);
+    }
+
+    private Restaurant findActiveRestaurantById(Long id) {
+        return restaurantRepository.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + id));
     }
 
 }

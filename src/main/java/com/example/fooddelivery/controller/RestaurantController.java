@@ -5,6 +5,7 @@ import com.example.fooddelivery.dto.response.RestaurantResponse;
 import com.example.fooddelivery.exception.ErrorResponse;
 import com.example.fooddelivery.service.RestaurantService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,8 +13,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -39,7 +41,7 @@ public class RestaurantController {
 
     @Operation(
             summary = "Create a new restaurant",
-            description = "Creates a new restaurant listing"
+            description = "Creates a new restaurant listing. All required fields must be provided."
     )
     @ApiResponses({
             @ApiResponse(
@@ -61,20 +63,34 @@ public class RestaurantController {
 
     @Operation(
             summary = "Get all restaurants",
-            description = "Returns a paginated list of all active restaurants"
+            description = "Returns a paginated and sortable list of all active restaurants"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Restaurants retrieved successfully")
     })
     @GetMapping
-    public ResponseEntity<Page<RestaurantResponse>> getAllRestaurants(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<RestaurantResponse>> getAllRestaurants(
+            @Parameter(description = "Page number (0-indexed)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", example = "10")
+            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Sort field", example = "name")
+            @RequestParam(defaultValue = "name") String sortBy,
+            @Parameter(description = "Sort direction (asc or desc)", example = "asc")
+            @RequestParam(defaultValue = "asc") String direction) {
+
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         Page<RestaurantResponse> restaurants = restaurantService.getAllRestaurants(pageable);
         return ResponseEntity.ok(restaurants);
     }
 
     @Operation(
             summary = "Get restaurant by ID",
-            description = "Returns a single restaurant by its ID"
+            description = "Returns a single active restaurant by its ID"
     )
     @ApiResponses({
             @ApiResponse(
@@ -96,7 +112,7 @@ public class RestaurantController {
 
     @Operation(
             summary = "Update a restaurant",
-            description = "Updates an existing restaurant by its ID"
+            description = "Updates an existing active restaurant by its ID"
     )
     @ApiResponses({
             @ApiResponse(
@@ -123,11 +139,11 @@ public class RestaurantController {
     }
 
     @Operation(
-            summary = "Delete a restaurant",
-            description = "Deletes a restaurant by its ID"
+            summary = "Soft delete a restaurant",
+            description = "Marks a restaurant as inactive. The restaurant will no longer appear in listings or search results."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Restaurant deleted successfully"),
+            @ApiResponse(responseCode = "204", description = "Restaurant soft-deleted successfully"),
             @ApiResponse(
                     responseCode = "404",
                     description = "Restaurant not found",
@@ -142,30 +158,42 @@ public class RestaurantController {
 
     @Operation(
             summary = "Search restaurants by name",
-            description = "Returns a paginated list of restaurants matching the search query"
+            description = "Returns a paginated list of active restaurants matching the keyword (case-insensitive, partial match)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Search results retrieved successfully")
     })
     @GetMapping("/search")
     public ResponseEntity<Page<RestaurantResponse>> searchRestaurants(
-            @RequestParam String name,
-            @PageableDefault(size = 10) Pageable pageable) {
-        Page<RestaurantResponse> restaurants = restaurantService.searchRestaurantsByName(name, pageable);
+            @Parameter(description = "Search keyword", example = "pizza")
+            @RequestParam String keyword,
+            @Parameter(description = "Page number", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", example = "10")
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<RestaurantResponse> restaurants = restaurantService.searchRestaurantsByName(keyword, pageable);
         return ResponseEntity.ok(restaurants);
     }
 
     @Operation(
             summary = "Get restaurants by cuisine",
-            description = "Returns a paginated list of restaurants filtered by cuisine type"
+            description = "Returns a paginated list of active restaurants filtered by cuisine type (case-insensitive)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Restaurants retrieved successfully")
     })
     @GetMapping("/cuisine")
     public ResponseEntity<Page<RestaurantResponse>> getRestaurantsByCuisine(
+            @Parameter(description = "Cuisine type", example = "Italian")
             @RequestParam String type,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @Parameter(description = "Page number", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", example = "10")
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
         Page<RestaurantResponse> restaurants = restaurantService.getRestaurantsByCuisine(type, pageable);
         return ResponseEntity.ok(restaurants);
     }

@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.validator.constraints.URL;
 
 @Getter
 @Setter
@@ -39,6 +40,7 @@ public class RestaurantRequest {
     private String cuisine;
 
     @Schema(example = "https://example.com/pizza-palace.jpg")
+    @URL(message = "Image URL must be a valid URL")
     private String imageUrl;
 
 }
