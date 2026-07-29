@@ -4,6 +4,8 @@ import com.example.fooddelivery.dto.request.RestaurantRequest;
 import com.example.fooddelivery.entity.Restaurant;
 import com.example.fooddelivery.entity.User;
 import com.example.fooddelivery.enums.Role;
+import com.example.fooddelivery.repository.CartItemRepository;
+import com.example.fooddelivery.repository.CartRepository;
 import com.example.fooddelivery.repository.RestaurantRepository;
 import com.example.fooddelivery.repository.UserRepository;
 import com.example.fooddelivery.repository.MenuRepository;
@@ -49,6 +51,12 @@ class RestaurantControllerIntegrationTest {
     private MenuRepository menuRepository;
 
     @Autowired
+    private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -61,6 +69,8 @@ class RestaurantControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        cartItemRepository.deleteAll();
+        cartRepository.deleteAll();
         menuRepository.deleteAll();
         restaurantRepository.deleteAll();
 

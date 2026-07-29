@@ -3,6 +3,8 @@ package com.example.fooddelivery.controller;
 import com.example.fooddelivery.dto.request.LoginRequest;
 import com.example.fooddelivery.dto.request.RegisterRequest;
 import com.example.fooddelivery.enums.Role;
+import com.example.fooddelivery.repository.CartItemRepository;
+import com.example.fooddelivery.repository.CartRepository;
 import com.example.fooddelivery.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,8 +35,16 @@ class AuthControllerIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private CartRepository cartRepository;
+
     @BeforeEach
     void setUp() {
+        cartItemRepository.deleteAll();
+        cartRepository.deleteAll();
         userRepository.deleteAll();
     }
 
