@@ -6,6 +6,7 @@ import com.example.fooddelivery.entity.User;
 import com.example.fooddelivery.enums.Role;
 import com.example.fooddelivery.repository.RestaurantRepository;
 import com.example.fooddelivery.repository.UserRepository;
+import com.example.fooddelivery.repository.MenuRepository;
 import com.example.fooddelivery.security.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,9 @@ class RestaurantControllerIntegrationTest {
     private RestaurantRepository restaurantRepository;
 
     @Autowired
+    private MenuRepository menuRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -57,6 +61,7 @@ class RestaurantControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        menuRepository.deleteAll();
         restaurantRepository.deleteAll();
 
         if (!userRepository.existsByEmail(TEST_EMAIL)) {
@@ -79,8 +84,7 @@ class RestaurantControllerIntegrationTest {
                 "123 Main Street",
                 "Mumbai",
                 "Italian",
-                "https://example.com/pizza.jpg"
-        );
+                "https://example.com/pizza.jpg");
     }
 
     private Restaurant seedRestaurant(String name, String cuisine, boolean active) {
@@ -101,9 +105,9 @@ class RestaurantControllerIntegrationTest {
         RestaurantRequest request = createValidRequest();
 
         mockMvc.perform(post("/api/v1/restaurants")
-                        .header("Authorization", "Bearer " + jwtToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(notNullValue())))
                 .andExpect(jsonPath("$.name", is("Pizza Palace")))
@@ -118,9 +122,9 @@ class RestaurantControllerIntegrationTest {
         String invalidJson = "{\"name\":\"\",\"address\":\"\",\"city\":\"\",\"cuisine\":\"\"}";
 
         mockMvc.perform(post("/api/v1/restaurants")
-                        .header("Authorization", "Bearer " + jwtToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(invalidJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status", is(400)))
                 .andExpect(jsonPath("$.message", is(notNullValue())));
@@ -131,13 +135,12 @@ class RestaurantControllerIntegrationTest {
     void updateRestaurant_success() throws Exception {
         Restaurant restaurant = seedRestaurant("Old Name", "Chinese", true);
         RestaurantRequest updateRequest = new RestaurantRequest(
-                "New Name", "Updated desc", "456 Avenue", "Delhi", "Indian", "https://example.com/new.jpg"
-        );
+                "New Name", "Updated desc", "456 Avenue", "Delhi", "Indian", "https://example.com/new.jpg");
 
         mockMvc.perform(put("/api/v1/restaurants/" + restaurant.getId())
-                        .header("Authorization", "Bearer " + jwtToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("New Name")))
                 .andExpect(jsonPath("$.cuisine", is("Indian")));
@@ -149,7 +152,7 @@ class RestaurantControllerIntegrationTest {
         Restaurant restaurant = seedRestaurant("To Delete", "Italian", true);
 
         mockMvc.perform(delete("/api/v1/restaurants/" + restaurant.getId())
-                        .header("Authorization", "Bearer " + jwtToken))
+                .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isNoContent());
 
         // Verify it's soft-deleted (still in DB but inactive)
@@ -164,7 +167,7 @@ class RestaurantControllerIntegrationTest {
         seedRestaurant("Deleted Restaurant", "Chinese", false);
 
         mockMvc.perform(get("/api/v1/restaurants")
-                        .header("Authorization", "Bearer " + jwtToken))
+                .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].name", is("Active Restaurant")));
@@ -176,7 +179,7 @@ class RestaurantControllerIntegrationTest {
         Restaurant restaurant = seedRestaurant("Deleted", "Italian", false);
 
         mockMvc.perform(get("/api/v1/restaurants/" + restaurant.getId())
-                        .header("Authorization", "Bearer " + jwtToken))
+                .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isNotFound());
     }
 
@@ -188,8 +191,8 @@ class RestaurantControllerIntegrationTest {
         seedRestaurant("Pizza Hut", "Italian", true);
 
         mockMvc.perform(get("/api/v1/restaurants/search")
-                        .param("keyword", "pizza")
-                        .header("Authorization", "Bearer " + jwtToken))
+                .param("keyword", "pizza")
+                .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)));
     }
@@ -201,8 +204,8 @@ class RestaurantControllerIntegrationTest {
         seedRestaurant("Pizza Deleted", "Italian", false);
 
         mockMvc.perform(get("/api/v1/restaurants/search")
-                        .param("keyword", "pizza")
-                        .header("Authorization", "Bearer " + jwtToken))
+                .param("keyword", "pizza")
+                .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].name", is("Pizza Palace")));
@@ -216,8 +219,8 @@ class RestaurantControllerIntegrationTest {
         seedRestaurant("Active Chinese", "Chinese", true);
 
         mockMvc.perform(get("/api/v1/restaurants/cuisine")
-                        .param("type", "Italian")
-                        .header("Authorization", "Bearer " + jwtToken))
+                .param("type", "Italian")
+                .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].name", is("Active Italian")));
@@ -231,11 +234,11 @@ class RestaurantControllerIntegrationTest {
         seedRestaurant("Bravo Burgers", "American", true);
 
         mockMvc.perform(get("/api/v1/restaurants")
-                        .param("page", "0")
-                        .param("size", "2")
-                        .param("sortBy", "name")
-                        .param("direction", "asc")
-                        .header("Authorization", "Bearer " + jwtToken))
+                .param("page", "0")
+                .param("size", "2")
+                .param("sortBy", "name")
+                .param("direction", "asc")
+                .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
                 .andExpect(jsonPath("$.content[0].name", is("Alpha Bites")))
@@ -248,13 +251,12 @@ class RestaurantControllerIntegrationTest {
     @DisplayName("POST /api/v1/restaurants - Should return 400 for invalid image URL")
     void createRestaurant_invalidUrl() throws Exception {
         RestaurantRequest request = new RestaurantRequest(
-                "Test Restaurant", "Desc", "Address", "City", "Cuisine", "not-a-url"
-        );
+                "Test Restaurant", "Desc", "Address", "City", "Cuisine", "not-a-url");
 
         mockMvc.perform(post("/api/v1/restaurants")
-                        .header("Authorization", "Bearer " + jwtToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status", is(400)));
     }
