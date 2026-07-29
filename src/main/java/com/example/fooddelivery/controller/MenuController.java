@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -151,6 +152,81 @@ public class MenuController {
             @PathVariable Long menuId) {
         menuService.deleteMenu(menuId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "Get available menus",
+            description = "Returns a paginated list of all active and available menu items"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Menus retrieved successfully")
+    })
+    @GetMapping("/available")
+    public ResponseEntity<Page<MenuResponse>> getAvailableMenus(
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(menuService.getAvailableMenus(pageable));
+    }
+
+    @Operation(
+            summary = "Filter menus by category",
+            description = "Returns a paginated list of menus filtered by category"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Menus retrieved successfully"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid category parameter",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @GetMapping("/category/{category}")
+    public ResponseEntity<Page<MenuResponse>> getMenusByCategory(
+            @Parameter(description = "Category name", example = "Pizza")
+            @PathVariable String category,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(menuService.getMenusByCategory(category, pageable));
+    }
+
+    @Operation(
+            summary = "Filter menus by price range",
+            description = "Returns a paginated list of menus within the specified inclusive price range"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Menus retrieved successfully"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid price range",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @GetMapping("/price")
+    public ResponseEntity<Page<MenuResponse>> getMenusByPriceRange(
+            @Parameter(description = "Minimum price", example = "10.0")
+            @RequestParam Double minPrice,
+            @Parameter(description = "Maximum price", example = "50.0")
+            @RequestParam Double maxPrice,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(menuService.getMenusByPriceRange(minPrice, maxPrice, pageable));
+    }
+
+    @Operation(
+            summary = "Search menus by name",
+            description = "Returns a paginated list of menus matching the keyword"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Search results retrieved successfully"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid keyword parameter",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @GetMapping("/search")
+    public ResponseEntity<Page<MenuResponse>> searchMenus(
+            @Parameter(description = "Search keyword", example = "burger")
+            @RequestParam String keyword,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(menuService.searchMenusByName(keyword, pageable));
     }
 
 }
