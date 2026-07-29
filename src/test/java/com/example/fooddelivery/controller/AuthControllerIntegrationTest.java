@@ -2,6 +2,7 @@ package com.example.fooddelivery.controller;
 
 import com.example.fooddelivery.dto.request.LoginRequest;
 import com.example.fooddelivery.dto.request.RegisterRequest;
+import com.example.fooddelivery.repository.AddressRepository;
 import com.example.fooddelivery.enums.Role;
 import com.example.fooddelivery.repository.CartItemRepository;
 import com.example.fooddelivery.repository.CartRepository;
@@ -41,10 +42,14 @@ class AuthControllerIntegrationTest {
     @Autowired
     private CartRepository cartRepository;
 
+    @Autowired
+    private AddressRepository addressRepository;
+
     @BeforeEach
     void setUp() {
         cartItemRepository.deleteAll();
         cartRepository.deleteAll();
+        addressRepository.deleteAll();
         userRepository.deleteAll();
     }
 
