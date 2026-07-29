@@ -17,4 +17,12 @@ public interface MenuService {
 
     void deleteMenu(Long menuId);
 
+    Page<MenuResponse> getAvailableMenus(Pageable pageable);
+
+    Page<MenuResponse> getMenusByCategory(String category, Pageable pageable);
+
+    Page<MenuResponse> getMenusByPriceRange(Double minPrice, Double maxPrice, Pageable pageable);
+
+    Page<MenuResponse> searchMenusByName(String keyword, Pageable pageable);
+
 }

@@ -76,4 +76,52 @@ public class MenuServiceImpl implements MenuService {
                 .orElseThrow(() -> new ResourceNotFoundException("Menu not found with id: " + id));
     }
 
+    @Override
+    public Page<MenuResponse> getAvailableMenus(Pageable pageable) {
+        log.info("Fetching available menus");
+        return menuRepository.findByAvailableTrueAndRestaurantActiveTrue(pageable)
+                .map(MenuMapper::toMenuResponse);
+    }
+
+    @Override
+    public Page<MenuResponse> getMenusByCategory(String category, Pageable pageable) {
+        if (category == null || category.trim().isEmpty()) {
+            log.warn("Category cannot be null or blank");
+            throw new IllegalArgumentException("Category cannot be blank");
+        }
+        log.info("Fetching menus by category: {}", category);
+        return menuRepository.findByCategoryIgnoreCaseAndAvailableTrueAndRestaurantActiveTrue(category.trim(), pageable)
+                .map(MenuMapper::toMenuResponse);
+    }
+
+    @Override
+    public Page<MenuResponse> getMenusByPriceRange(Double minPrice, Double maxPrice, Pageable pageable) {
+        if (minPrice == null || minPrice < 0) {
+            log.warn("Invalid minPrice: {}", minPrice);
+            throw new IllegalArgumentException("minPrice cannot be negative");
+        }
+        if (maxPrice == null || maxPrice < 0) {
+            log.warn("Invalid maxPrice: {}", maxPrice);
+            throw new IllegalArgumentException("maxPrice cannot be negative");
+        }
+        if (minPrice > maxPrice) {
+            log.warn("minPrice {} is greater than maxPrice {}", minPrice, maxPrice);
+            throw new IllegalArgumentException("minPrice cannot be greater than maxPrice");
+        }
+        log.info("Fetching menus by price range: {} to {}", minPrice, maxPrice);
+        return menuRepository.findByPriceBetweenAndAvailableTrueAndRestaurantActiveTrue(minPrice, maxPrice, pageable)
+                .map(MenuMapper::toMenuResponse);
+    }
+
+    @Override
+    public Page<MenuResponse> searchMenusByName(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            log.warn("Keyword cannot be null or blank");
+            throw new IllegalArgumentException("Keyword cannot be blank");
+        }
+        log.info("Searching menus by keyword: {}", keyword);
+        return menuRepository.findByNameContainingIgnoreCaseAndAvailableTrueAndRestaurantActiveTrue(keyword.trim(), pageable)
+                .map(MenuMapper::toMenuResponse);
+    }
+
 }
